@@ -1,15 +1,9 @@
 #include <iostream>
 #include <X11/Xlib.h>
-//#include <X11/X.h>
-//#include <X11/Xutil.h>
 #include "Leap.h"
 
 using namespace std;
 using namespace Leap;
-
-//void setcur(char a,b){
-//	XWarpPointer(dpy, None, root_window, a, b, 0, 0, 100, 100);
-//}
 
 int main(){
 	Display *dpy;
