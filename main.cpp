@@ -1,58 +1,37 @@
 #include <iostream>
-#include <CoreGraphics/CoreGraphics.h>
-#include <Leap.h>
+#include <X11/Xlib.h>
+//#include <X11/X.h>
+//#include <X11/Xutil.h>
+#include "Leap.h"
 
-class MouseController : public Leap::Listener {
-public:
-    virtual void onFrame(const Leap::Controller &);
-};
+using namespace std;
+using namespace Leap;
 
-void MouseController::onFrame(const Leap::Controller &controller) {
-    // get list of detected screens
-    const Leap::ScreenList screens = controller.calibratedScreens();
-    
-    // make sure we have a detected screen
-    if (screens.empty()) return;
-    const Leap::Screen screen = screens[0];
-    
-    // find the first finger or tool
-    const Leap::Frame frame = controller.frame();
-    const Leap::HandList hands = frame.hands();
-    if (hands.empty()) return;
-    const Leap::PointableList pointables = hands[0].pointables();
-    if (pointables.empty()) return;
-    const Leap::Pointable firstPointable = pointables[0];
-    
-    // get x, y coordinates on the first screen
-    const Leap::Vector intersection = screen.intersect(
-                                                       firstPointable,
-                                                       true,  // normalize
-                                                       1.0f   // clampRatio
-                                                       );
-    
-    // if the user is not pointing at the screen all components of
-    // the returned vector will be Not A Number (NaN)
-    // isValid() returns true only if all components are finite
-    if (! intersection.isValid()) return;
-    
-    unsigned int x = screen.widthPixels() * intersection.x;
-    // flip y coordinate to standard top-left origin
-    unsigned int y = screen.heightPixels() * (1.0f - intersection.y);
-    
-    CGPoint destPoint = CGPointMake(x, y);
-    CGDisplayMoveCursorToPoint(kCGDirectMainDisplay, destPoint);
+//void setcur(char a,b){
+//	XWarpPointer(dpy, None, root_window, a, b, 0, 0, 100, 100);
+//}
+
+int main(){
+	Display *dpy;
+	Window root;
+	Controller controller;
+	Frame frame = controller.frame();
+
+	dpy = XOpenDisplay(0);
+	root = XRootWindow(dpy,0);
+	XSelectInput(dpy,root,KeyReleaseMask);
+	int x,y;
+	while(1){ cout << "Tick";
+		if (frame.pointables().count() > 0) {
+			cout << "Tock";
+			Pointable pointable = frame.pointables()[0];
+			ScreenList screens = controller.calibratedScreens();
+			Leap::Screen screen = screens.closestScreenHit(pointable);
+			Vector normalizedCoordinates = screen.intersect(pointable, true);
+			x = (int)(normalizedCoordinates.x * screen.widthPixels());
+			y = screen.heightPixels() - (int)(normalizedCoordinates.y * screen.heightPixels());
+			XWarpPointer(dpy, None, root, x, y, 0, 0, 1000, 1000);
+        		XFlush(dpy);
+		};
+	};
 }
-
-int main(int argc, const char * argv[]) {
-    MouseController listener;
-    Leap::Controller controller;
-    controller.addListener(listener);
-    
-    std::cout << "Press any key to exit" << std::endl;
-    std::cin.get();
-    
-    controller.removeListener(listener);
-    
-    return 0;
-}
-
